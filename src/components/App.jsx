@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { GlobalStyle } from './GlobalStyles';
 import { Layout } from './Layout';
 import { ContactForm } from './ContactForm/ContactForm';
@@ -6,33 +6,32 @@ import { Filter } from './Filter/Filter';
 import { ContactList } from './ContactList/ContactList';
 import { nanoid } from 'nanoid';
 
-export class App extends Component {
-  state = {
-    contacts: [
-      //For test(works if LS is cleared)!!!
-      { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
-      { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
-      { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
-      { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
-    ],
-    filter: '',
-  };
+const getIntialContacts = () => {
+  const savedContacts = localStorage.getItem('contacts');
 
-  componentDidMount() {
-    const savedContacts = localStorage.getItem('contacts');
-    if (savedContacts !== null) {
-      this.setState({ contacts: JSON.parse(savedContacts) });
-    }
+  if (savedContacts !== null) {
+    return JSON.parse(savedContacts);
   }
+  return [
+    // For test(works if LS is cleared)!!! =>
+    { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
+    { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
+    { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
+    { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
+    // <= For test(works if LS is cleared)!!!
+  ];
+};
 
-  componentDidUpdate(pProps, pState) {
-    if (pState.contacts !== this.state.contacts) {
-      localStorage.setItem('contacts', JSON.stringify(this.state.contacts));
-    }
-  }
+export const App = () => {
+  const [contacts, setContacts] = useState(getIntialContacts);
+  const [filter, setFilter] = useState('');
 
-  addContact = newContact => {
-    const isExist = this.state.contacts.some(
+  useEffect(() => {
+    localStorage.setItem('contacts', JSON.stringify(contacts));
+  }, [contacts]);
+
+  const addContact = newContact => {
+    const isExist = contacts.some(
       contact => contact.name.toLowerCase() === newContact.name.toLowerCase()
     );
 
@@ -41,49 +40,36 @@ export class App extends Component {
       return;
     }
 
-    this.setState(pState => ({
-      contacts: [...pState.contacts, { id: nanoid(), ...newContact }],
-    }));
+    setContacts([...contacts, { id: nanoid(), ...newContact }]);
   };
 
-  deleteContact = contactId => {
-    this.setState(pState => ({
-      contacts: pState.contacts.filter(contact => contact.id !== contactId),
-    }));
+  const filterContact = newFilter => setFilter(newFilter);
+
+  const deleteContact = contactId => {
+    setContacts(contacts.filter(contact => contact.id !== contactId));
   };
 
-  filterContact = newFilter => {
-    this.setState({
-      filter: newFilter,
-    });
-  };
+  const getVisibleContactItems = contacts.filter(contact =>
+    contact.name.toLocaleLowerCase().includes(filter.toLocaleLowerCase())
+  );
 
-  render() {
-    const state = this.state;
-    const getVisibleContactItems = state.contacts.filter(contact =>
-      contact.name
-        .toLocaleLowerCase()
-        .includes(state.filter.toLocaleLowerCase())
-    );
-
-    return (
-      <Layout>
-        <h1>Phonebook</h1>
-        <ContactForm onAdd={this.addContact} />
-        <h2>Contacts</h2>
-        {state.contacts.length ? (
-          <>
-            <Filter filter={state.filter} onChangeFilter={this.filterContact} />
-            <ContactList
-              contacts={getVisibleContactItems}
-              onDelete={this.deleteContact}
-            />
-          </>
-        ) : (
-          <p>Contact list is empty</p>
-        )}
-        <GlobalStyle />
-      </Layout>
-    );
-  }
-}
+  return (
+    <Layout>
+      <h1>Phonebook</h1>
+      <ContactForm onAdd={addContact} />
+      <h2>Contacts</h2>
+      {contacts.length ? (
+        <>
+          <Filter filter={filter} onChangeFilter={filterContact} />
+          <ContactList
+            contacts={getVisibleContactItems}
+            onDelete={deleteContact}
+          />
+        </>
+      ) : (
+        <p>Contact list is empty</p>
+      )}
+      <GlobalStyle />
+    </Layout>
+  );
+};
