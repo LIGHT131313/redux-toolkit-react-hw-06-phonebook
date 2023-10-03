@@ -1,4 +1,5 @@
-import PropTypes from 'prop-types';
+import { useDispatch, useSelector } from 'react-redux';
+import { addContact } from 'redux/contactsSlice';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import {
@@ -7,6 +8,7 @@ import {
   ErrorMsg,
   AddBtn,
 } from './ContactForm.styled';
+import { getContacts } from 'redux/selectors';
 
 const nameRegExp = /^[a-zA-Zа-яА-Я]+(([' -][a-zA-Zа-яА-Я ])?[a-zA-Zа-яА-Я]*)*$/;
 const phoneRegExp =
@@ -21,7 +23,23 @@ const PhonebookSchema = Yup.object().shape({
     .matches(phoneRegExp, phoneRegExpMsg),
 });
 
-export const ContactForm = ({ onAdd }) => {
+export const ContactForm = () => {
+  const dispatch = useDispatch();
+  const contacts = useSelector(getContacts);
+
+  const onAdd = newContact => {
+    const isExist = contacts.some(
+      contact => contact.name.toLowerCase() === newContact.name.toLowerCase()
+    );
+
+    if (isExist) {
+      alert(`${newContact.name} is already in contacts.`);
+      return;
+    }
+
+    dispatch(addContact(newContact));
+  };
+
   return (
     <Formik
       initialValues={{ name: '', number: '' }}
@@ -40,8 +58,4 @@ export const ContactForm = ({ onAdd }) => {
       </StyledForm>
     </Formik>
   );
-};
-
-ContactForm.propTypes = {
-  onAdd: PropTypes.func.isRequired,
 };
